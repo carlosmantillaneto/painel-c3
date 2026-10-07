@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel C3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg: #1b1d1f; --panel: #242729; --panel-raised: #2d3033; --line: #3b3f43;
+  --ink: #eef0f1; --ink-dim: #9aa1a6; --accent: #e2824a; --accent-dim: #8a5330;
+  --good: #6fcf8e; --good-dim: #2f4a3a; --bad: #ef6f6c; --bad-dim: #4a3131;
+  --uber-c: #39c08a; --n99-c: #4fa6e0;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--bg);}
+body{
+  color:var(--ink); font-family:'IBM Plex Sans',-apple-system,sans-serif;
+  padding-inline:16px; padding-block:20px 48px; font-size:14px; line-height:1.45;
+}
+h1,h2,h3{font-family:'Rajdhani',sans-serif; margin:0;}
+.mono{font-family:'IBM Plex Mono',monospace; font-variant-numeric: tabular-nums;}
+.hero{display:flex; align-items:center; gap:14px; margin-bottom:18px;}
+.hero-mark{width:44px;height:44px;flex:0 0 auto;border-radius:10px;
+  background:linear-gradient(145deg, var(--panel-raised), var(--panel));
+  border:1px solid var(--line); display:flex;align-items:center;justify-content:center;}
+.hero-mark svg{width:26px;height:26px;}
+.hero h1{font-size:1.5rem; font-weight:700;}
+.hero .range{font-size:0.78rem; color:var(--ink-dim); margin-top:2px;}
+.statusbar{display:flex; align-items:center; gap:8px; font-size:0.72rem; color:var(--ink-dim); margin-bottom:16px;}
+.statusbar .dot{width:7px;height:7px;border-radius:50%; background:var(--ink-dim);}
+.statusbar.live .dot{background:var(--good);}
+.statusbar.err .dot{background:var(--bad);}
+.kpi-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+.kpi{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 14px 11px; min-width:0;}
+.kpi .k-label{font-size:0.68rem; color:var(--ink-dim); margin-bottom:6px;}
+.kpi .k-value{font-family:'Rajdhani',sans-serif; font-weight:700; font-size:1.5rem; font-variant-numeric: tabular-nums; line-height:1.1;}
+.kpi .k-unit{font-size:0.62rem; font-weight:500; color:var(--ink-dim); margin-left:3px;}
+.kpi .k-sub{display:flex; gap:4px 10px; flex-wrap:wrap; margin-top:7px; font-size:0.68rem; color:var(--ink-dim);}
+.kpi .k-sub b{color:var(--ink); font-weight:600;}
+.kpi.accent{border-color:var(--accent-dim);}
+.kpi.accent .k-value{color:var(--accent);}
+.section-label{font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-dim);
+  margin:22px 0 10px; padding-left:2px; border-left:2px solid var(--accent-dim); padding-block:1px;}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 14px 10px; margin-bottom:12px; min-width:0;}
+.card h3{font-size:0.92rem; font-weight:600; margin-bottom:2px;}
+.card .note{font-size:0.7rem; color:var(--ink-dim); margin-bottom:10px;}
+.split-track{display:flex; height:30px; border-radius:7px; overflow:hidden; border:1px solid var(--line); background:var(--panel-raised);}
+.split-seg{display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.74rem; min-width:0; white-space:nowrap; overflow:hidden;}
+.split-seg.uber{background:var(--uber-c); color:#0b1f15;}
+.split-seg.n99{background:var(--n99-c); color:#071a28;}
+.split-legend{display:flex; gap:18px; margin-top:10px; font-size:0.74rem; color:var(--ink-dim); flex-wrap:wrap;}
+.split-legend .dot2{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;}
+.chart-wrap{position:relative; width:100%; min-width:0;}
+.chart-wrap canvas{max-width:100%;}
+.week-list{display:flex; flex-direction:column; gap:8px;}
+.week-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px;
+  background:var(--panel-raised); border:1px solid var(--line); border-radius:9px; min-width:0;}
+.week-row .w-label{font-size:0.76rem; min-width:0;}
+.week-row .w-label .w-dates{display:block; color:var(--ink-dim); font-size:0.66rem; margin-top:1px;}
+.week-row .w-figs{text-align:right; flex:0 0 auto;}
+.week-row .w-figs .w-ganho{font-family:'IBM Plex Mono',monospace; font-size:0.82rem;}
+.week-row .w-figs .w-saldo{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; margin-top:2px;}
+.pos{color:var(--good);} .neg{color:var(--bad);}
+.pill{display:inline-block; font-size:0.62rem; font-weight:600; padding:2px 7px; border-radius:20px; margin-left:6px;}
+.pill.pos{background:var(--good-dim); color:var(--good);}
+.pill.neg{background:var(--bad-dim); color:var(--bad);}
+.cost-list{display:flex; flex-direction:column; gap:7px;}
+.cost-row{display:flex; justify-content:space-between; font-size:0.8rem; gap:10px; min-width:0;}
+.cost-row span:first-child{color:var(--ink-dim);}
+.cost-row span:last-child{font-family:'IBM Plex Mono',monospace; white-space:nowrap;}
+.cost-total{display:flex; justify-content:space-between; border-top:1px solid var(--line); margin-top:8px; padding-top:8px; font-weight:600;}
+.cost-total span:last-child{color:var(--accent); font-family:'IBM Plex Mono',monospace;}
+.empty{padding:24px 14px; text-align:center; color:var(--ink-dim); font-size:0.82rem;}
+.setup-box{background:var(--panel); border:1px solid var(--accent-dim); border-radius:12px; padding:16px; margin-bottom:16px; font-size:0.8rem; line-height:1.6;}
+.setup-box code{background:var(--panel-raised); padding:1px 5px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:0.78em;}
+footer{margin-top:22px; font-size:0.68rem; color:var(--ink-dim); line-height:1.6; border-top:1px solid var(--line); padding-top:12px;}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important;} }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-mark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#e2824a" stroke-width="1.8">
+      <path d="M3 13l1.2-4.2A2 2 0 0 1 6.1 7.3h11.8a2 2 0 0 1 1.9 1.5L21 13" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M2.5 13h19v4a1 1 0 0 1-1 1h-1.3a1 1 0 0 1-1-.86L18 15.5H6l-.2 1.64a1 1 0 0 1-1 .86H3.5a1 1 0 0 1-1-1v-4z" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="7" cy="17.3" r="1.3"/><circle cx="17" cy="17.3" r="1.3"/>
+    </svg>
+  </div>
+  <div>
+    <h1>Painel C3</h1>
+    <div class="range" id="rangeLabel">carregando…</div>
+  </div>
+</div>
+
+<div class="statusbar" id="statusBar"><span class="dot"></span><span id="statusText">Conectando à planilha…</span></div>
+
+<div id="setupPanel" class="setup-box" hidden>
+  <strong>Configure a conexão</strong><br><br>
+  Cole a URL do seu Web App do Apps Script e o token que você definiu em <code>setApiSecret()</code>.
+  Isso fica salvo só neste navegador.<br><br>
+  <input id="urlInput" type="text" placeholder="https://script.google.com/macros/s/.../exec"
+    style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--panel-raised);color:var(--ink);margin-bottom:8px;font-family:monospace;font-size:0.78rem;">
+  <input id="tokenInput" type="text" placeholder="token (API_SECRET)"
+    style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--panel-raised);color:var(--ink);margin-bottom:8px;font-family:monospace;font-size:0.78rem;">
+  <button id="saveConfig" style="padding:8px 14px;border-radius:6px;border:none;background:var(--accent);color:#1b1d1f;font-weight:600;cursor:pointer;">Salvar e carregar</button>
+</div>
+
+<div id="content" hidden>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="k-label">KM RODADO</div>
+      <div class="k-value" id="kpiKmDia">—<span class="k-unit">km/dia</span></div>
+      <div class="k-sub"><span>semana <b id="kpiKmSem">—</b></span><span>mês <b id="kpiKmMes">—</b></span></div></div>
+    <div class="kpi accent"><div class="k-value" id="kpiRkmDia">—<span class="k-unit">R$/km</span></div>
+      <div class="k-label" style="margin-top:4px;">MÉDIA GERAL</div>
+      <div class="k-sub"><span>mesma taxa aplicada semana e mês</span></div></div>
+    <div class="kpi"><div class="k-label">HORAS NA RUA</div>
+      <div class="k-value" id="kpiHDia">—<span class="k-unit">h/dia</span></div>
+      <div class="k-sub"><span>semana <b id="kpiHSem">—</b></span><span>mês <b id="kpiHMes">—</b></span></div></div>
+    <div class="kpi"><div class="k-label">RENDIMENTO</div>
+      <div class="k-value" id="kpiRh">—<span class="k-unit">R$/h</span></div>
+      <div class="k-sub"><span>ganho médio/dia <b id="kpiGDia">—</b></span></div></div>
+  </div>
+
+  <div class="section-label">Ganho Uber + 99</div>
+  <div class="card">
+    <h3 id="kpiGMes">—</h3>
+    <div class="note">projeção mensal · ganho médio/semana <span class="mono" id="kpiGSem">—</span></div>
+    <div class="split-track" id="splitTrack"></div>
+    <div class="split-legend">
+      <span><i class="dot2" style="background:var(--uber-c)"></i>Uber — <b class="mono" id="txtUber">—</b></span>
+      <span><i class="dot2" style="background:var(--n99-c)"></i>99 — <b class="mono" id="txt99">—</b></span>
+    </div>
+  </div>
+
+  <div class="section-label">Evolução diária</div>
+  <div class="card">
+    <h3>Ganho vs. custo do dia</h3>
+    <div class="note">linha pontilhada = fixo + combustível daquele dia</div>
+    <div class="chart-wrap"><canvas id="chartGanho" height="190"></canvas></div>
+  </div>
+  <div class="card"><h3>R$ por km</h3><div class="chart-wrap"><canvas id="chartRkm" height="150"></canvas></div></div>
+  <div class="card"><h3>Km rodado</h3><div class="chart-wrap"><canvas id="chartKm" height="150"></canvas></div></div>
+
+  <div class="section-label">Fechamento semanal</div>
+  <div class="card"><div class="week-list" id="weekList"></div></div>
+
+  <div class="section-label">Custo fixo do carro</div>
+  <div class="card"><div class="cost-list" id="costList"></div></div>
+
+  <footer id="footerNote">—</footer>
+</div>
+
+<div id="emptyState" class="empty" hidden>Nenhum dia registrado ainda. Manda os dados pelo bot do Telegram que eles aparecem aqui.</div>
+
+<script>
+(function(){
+"use strict";
+
+var CONFIG_KEY = "painelc3_config";
+
+function loadConfig(){
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || "null"); } catch(e){ return null; }
+}
+function saveConfig(cfg){
+  try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); } catch(e){}
+}
+
+var cfg = loadConfig();
+if (!cfg || !cfg.url) {
+  document.getElementById("setupPanel").hidden = false;
+  document.getElementById("statusText").textContent = "Aguardando configuração.";
+} else {
+  loadData(cfg);
+}
+
+document.getElementById("saveConfig").addEventListener("click", function(){
+  var url = document.getElementById("urlInput").value.trim();
+  var token = document.getElementById("tokenInput").value.trim();
+  if (!url) return;
+  var newCfg = { url: url, token: token };
+  saveConfig(newCfg);
+  document.getElementById("setupPanel").hidden = true;
+  loadData(newCfg);
+});
+
+function setStatus(mode, text){
+  var bar = document.getElementById("statusBar");
+  bar.className = "statusbar " + mode;
+  document.getElementById("statusText").textContent = text;
+}
+
+function loadData(cfg){
+  setStatus("", "Conectando à planilha…");
+  var url = cfg.url + (cfg.url.indexOf("?") >= 0 ? "&" : "?") + "token=" + encodeURIComponent(cfg.token || "");
+  fetch(url).then(function(r){ return r.json(); }).then(function(data){
+    if (data.error) { setStatus("err", "Erro: " + data.error + " — confira a URL e o token."); document.getElementById("setupPanel").hidden = false; return; }
+    setStatus("live", "Atualizado agora · fonte: Google Sheets");
+    render(data);
+  }).catch(function(err){
+    setStatus("err", "Não consegui falar com a planilha. Confira a URL do Web App.");
+    document.getElementById("setupPanel").hidden = false;
+  });
+}
+
+function render(data){
+  var rows = (data.diario || []).filter(function(r){ return r["Data"]; }).map(function(r){
+    return {
+      date: new Date(r["Data"]),
+      km: Number(r["Km"]) || 0,
+      horas: Number(r["Horas"]) || 0,
+      uber: Number(r["Uber"]) || 0,
+      n99: Number(r["99"]) || 0,
+      total: Number(r["Total"]) || 0,
+      custo: Number(r["Meta"]) || 0,
+      saldo: Number(r["Saldo"]) || 0
+    };
+  }).sort(function(a,b){ return a.date - b.date; });
+
+  if (rows.length === 0){
+    document.getElementById("content").hidden = true;
+    document.getElementById("emptyState").hidden = false;
+    return;
+  }
+  document.getElementById("content").hidden = false;
+  document.getElementById("emptyState").hidden = true;
+
+  renderCosts(data.parametros || []);
+
+  var fmtBR = function(d){ var dd=String(d.getDate()).padStart(2,"0"); var mm=String(d.getMonth()+1).padStart(2,"0"); return dd+"/"+mm; };
+  var fmtR = function(v){ return "R$ "+v.toFixed(2).replace(".",","); };
+  var fmtRsigned = function(v){ return (v<0?"-":"+")+"R$ "+Math.abs(v).toFixed(2).replace(".",","); };
+  var fmtKm1 = function(v){ return v.toFixed(1).replace(".",","); };
+
+  var n = rows.length;
+  var sum = function(arr){ return arr.reduce(function(a,b){return a+b;},0); };
+  var totKm = sum(rows.map(function(r){return r.km;}));
+  var totHoras = sum(rows.map(function(r){return r.horas;}));
+  var totUber = sum(rows.map(function(r){return r.uber;}));
+  var tot99 = sum(rows.map(function(r){return r.n99;}));
+  var totGanho = totUber + tot99;
+  var kmDia = totKm/n, hDia = totHoras/n, gDia = totGanho/n;
+  var rkmGeral = totKm>0 ? totGanho/totKm : 0, rhGeral = totHoras>0 ? totGanho/totHoras : 0;
+
+  document.getElementById("rangeLabel").textContent = fmtBR(rows[0].date)+" – "+fmtBR(rows[n-1].date)+" · "+n+" dias · Uber + 99";
+  document.getElementById("kpiKmDia").innerHTML = fmtKm1(kmDia)+'<span class="k-unit">km/dia</span>';
+  document.getElementById("kpiKmSem").textContent = fmtKm1(kmDia*7)+" km";
+  document.getElementById("kpiKmMes").textContent = fmtKm1(kmDia*30)+" km";
+  document.getElementById("kpiRkmDia").innerHTML = "R$ "+rkmGeral.toFixed(2).replace(".",",")+'<span class="k-unit">/km</span>';
+  document.getElementById("kpiHDia").innerHTML = hDia.toFixed(2).replace(".",",")+'<span class="k-unit">h/dia</span>';
+  document.getElementById("kpiHSem").textContent = (hDia*7).toFixed(1).replace(".",",")+"h";
+  document.getElementById("kpiHMes").textContent = (hDia*30).toFixed(1).replace(".",",")+"h";
+  document.getElementById("kpiRh").innerHTML = "R$ "+rhGeral.toFixed(2).replace(".",",")+'<span class="k-unit">/h</span>';
+  document.getElementById("kpiGDia").textContent = fmtR(gDia);
+  document.getElementById("kpiGMes").textContent = "Projeção: "+fmtR(gDia*30)+" / mês";
+  document.getElementById("kpiGSem").textContent = fmtR(gDia*7);
+
+  var pctUber = totGanho>0 ? totUber/totGanho*100 : 0, pct99 = totGanho>0 ? tot99/totGanho*100 : 0;
+  var track = document.getElementById("splitTrack");
+  track.innerHTML = "";
+  var segU = document.createElement("div"); segU.className="split-seg uber"; segU.style.width=pctUber+"%"; segU.textContent=pctUber.toFixed(0)+"%";
+  var seg9 = document.createElement("div"); seg9.className="split-seg n99"; seg9.style.width=pct99+"%"; seg9.textContent=pct99.toFixed(0)+"%";
+  track.appendChild(segU); track.appendChild(seg9);
+  document.getElementById("txtUber").textContent = fmtR(totUber)+" ("+pctUber.toFixed(1)+"%)";
+  document.getElementById("txt99").textContent = fmtR(tot99)+" ("+pct99.toFixed(1)+"%)";
+
+  var cssVar = function(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); };
+  var inkDim = cssVar("--ink-dim"), line = cssVar("--line"), good = cssVar("--good"), accent = cssVar("--accent"), n99c = cssVar("--n99-c");
+  Chart.defaults.color = inkDim; Chart.defaults.borderColor = line;
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace"; Chart.defaults.font.size = 10;
+  var labels = rows.map(function(r){ return fmtBR(r.date); });
+
+  ["chartGanho","chartRkm","chartKm"].forEach(function(id){
+    var existing = Chart.getChart(id); if (existing) existing.destroy();
+  });
+
+  new Chart(document.getElementById("chartGanho"), {
+    type:"line",
+    data:{labels:labels, datasets:[
+      {label:"Ganho", data:rows.map(function(r){return r.total;}), borderColor:good, backgroundColor:"rgba(111,207,142,0.10)", fill:true, tension:0.25, pointRadius:0, borderWidth:2},
+      {label:"Custo do dia", data:rows.map(function(r){return r.custo;}), borderColor:accent, borderDash:[4,4], pointRadius:0, borderWidth:1.5}
+    ]},
+    options:{responsive:true, plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},
+      scales:{x:{ticks:{maxRotation:90,minRotation:90,autoSkip:true,maxTicksLimit:13}}, y:{ticks:{callback:function(v){return "R$"+v;}}, grid:{color:line}}}}
+  });
+  new Chart(document.getElementById("chartRkm"), {
+    type:"bar",
+    data:{labels:labels, datasets:[{data:rows.map(function(r){return r.km>0 ? r.total/r.km : 0;}),
+      backgroundColor:rows.map(function(r){var v=r.km>0?r.total/r.km:0; return v>=2?good:(v>0?accent:line);}), borderRadius:2}]},
+    options:{responsive:true, plugins:{legend:{display:false}},
+      scales:{x:{ticks:{maxRotation:90,minRotation:90,autoSkip:true,maxTicksLimit:13}}, y:{ticks:{callback:function(v){return "R$"+v;}}, grid:{color:line}}}}
+  });
+  new Chart(document.getElementById("chartKm"), {
+    type:"bar",
+    data:{labels:labels, datasets:[{data:rows.map(function(r){return r.km;}), backgroundColor:n99c, borderRadius:2}]},
+    options:{responsive:true, plugins:{legend:{display:false}},
+      scales:{x:{ticks:{maxRotation:90,minRotation:90,autoSkip:true,maxTicksLimit:13}}, y:{ticks:{callback:function(v){return v+"km";}}, grid:{color:line}}}}
+  });
+
+  function mondayOf(d){ var copy=new Date(d); var day=copy.getDay(); var diff=(day===0?-6:1-day); copy.setDate(copy.getDate()+diff); copy.setHours(0,0,0,0); return copy; }
+  var weeks = {};
+  rows.forEach(function(r){ var mon=mondayOf(r.date); var key=mon.toISOString().slice(0,10); if(!weeks[key]) weeks[key]={start:mon, rows:[]}; weeks[key].rows.push(r); });
+  var weekKeys = Object.keys(weeks).sort();
+  var weekList = document.getElementById("weekList");
+  weekList.innerHTML = "";
+  weekKeys.forEach(function(key){
+    var w = weeks[key]; var wk = w.rows;
+    var km = sum(wk.map(function(r){return r.km;}));
+    var ganho = sum(wk.map(function(r){return r.total;}));
+    var custo = sum(wk.map(function(r){return r.custo;}));
+    var saldo = ganho - custo;
+    var sunday = new Date(w.start); sunday.setDate(sunday.getDate()+6);
+    var lastDay = wk[wk.length-1].date;
+    var endLabel = lastDay < sunday ? fmtBR(lastDay)+" (parcial)" : fmtBR(sunday);
+    var row = document.createElement("div"); row.className="week-row";
+    row.innerHTML = '<div class="w-label">'+fmtBR(w.start)+' – '+endLabel+'<span class="w-dates">'+km.toFixed(0)+' km · '+wk.length+' dias</span></div>'+
+      '<div class="w-figs"><div class="w-ganho">'+fmtR(ganho)+'</div><div class="w-saldo '+(saldo>=0?"pos":"neg")+'">'+fmtRsigned(saldo)+
+      '<span class="pill '+(saldo>=0?"pos":"neg")+'">'+(saldo>=0?"cobriu":"faltou")+'</span></div></div>';
+    weekList.appendChild(row);
+  });
+
+  document.getElementById("footerNote").innerHTML =
+    "Dados vindos direto da planilha, alimentados pelo bot do Telegram. Combustível calculado com o preço vigente em cada data ÷ autonomia registrada no Parâmetros.";
+}
+
+function renderCosts(params){
+  var list = document.getElementById("costList");
+  list.innerHTML = "";
+  var total = 0;
+  params.forEach(function(p){
+    if (!/mensal/i.test(p["Item"])) return;
+    var v = Number(p["Valor"]) || 0;
+    total += v;
+    var row = document.createElement("div");
+    row.className = "cost-row";
+    row.innerHTML = "<span>"+p["Item"]+"</span><span>R$ "+v.toFixed(2).replace(".",",")+"</span>";
+    list.appendChild(row);
+  });
+  var totalRow = document.createElement("div");
+  totalRow.className = "cost-total";
+  totalRow.innerHTML = "<span>Total mensal · R$ "+(total/30).toFixed(2).replace(".",",")+"/dia</span><span>R$ "+total.toFixed(2).replace(".",",")+"</span>";
+  list.appendChild(totalRow);
+}
+
+})();
+</script>
+</body>
+</html>

@@ -78,6 +78,25 @@ h1,h2,h3{font-family:'Rajdhani',sans-serif; margin:0;}
 .empty{padding:24px 14px; text-align:center; color:var(--ink-dim); font-size:0.82rem;}
 .setup-box{background:var(--panel); border:1px solid var(--accent-dim); border-radius:12px; padding:16px; margin-bottom:16px; font-size:0.8rem; line-height:1.6;}
 .setup-box code{background:var(--panel-raised); padding:1px 5px; border-radius:4px; font-family:'IBM Plex Mono',monospace; font-size:0.78em;}
+.field{display:flex; flex-direction:column; gap:4px; margin-bottom:10px;}
+.field label{font-size:0.7rem; color:var(--ink-dim);}
+.field input{padding:9px 10px; border-radius:7px; border:1px solid var(--line); background:var(--panel-raised); color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:0.84rem; width:100%;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.btn{padding:10px 14px; border-radius:7px; border:1px solid var(--line); background:var(--panel-raised); color:var(--ink); font-weight:600; font-size:0.8rem; cursor:pointer;}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#1b1d1f;}
+.btn.good{background:var(--good); border-color:var(--good); color:#0b1f15;}
+.btn.ghost{background:transparent;}
+.btn:disabled{opacity:0.45; cursor:not-allowed;}
+.btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;}
+.seg-status{font-size:0.76rem; color:var(--ink-dim); background:var(--panel-raised); border:1px solid var(--line); border-radius:8px; padding:9px 11px; margin-bottom:10px;}
+.seg-status b{color:var(--ink);}
+.msg{font-size:0.76rem; margin-top:8px; min-height:1em;}
+.msg.ok{color:var(--good);} .msg.err{color:var(--bad);}
+.tabs{display:flex; gap:6px; margin-bottom:12px;}
+.tab{flex:1; text-align:center; padding:8px; border-radius:7px; border:1px solid var(--line); background:var(--panel-raised); color:var(--ink-dim); font-size:0.74rem; font-weight:600; cursor:pointer;}
+.tab.active{background:var(--accent-dim); color:var(--accent); border-color:var(--accent-dim);}
+.tabpane{display:none;}
+.tabpane.active{display:block;}
 footer{margin-top:22px; font-size:0.68rem; color:var(--ink-dim); line-height:1.6; border-top:1px solid var(--line); padding-top:12px;}
 @media (prefers-reduced-motion: reduce){ *{transition:none!important;} }
 </style>
@@ -109,6 +128,49 @@ footer{margin-top:22px; font-size:0.68rem; color:var(--ink-dim); line-height:1.6
   <input id="tokenInput" type="text" placeholder="token (API_SECRET)"
     style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--panel-raised);color:var(--ink);margin-bottom:8px;font-family:monospace;font-size:0.78rem;">
   <button id="saveConfig" style="padding:8px 14px;border-radius:6px;border:none;background:var(--accent);color:#1b1d1f;font-weight:600;cursor:pointer;">Salvar e carregar</button>
+</div>
+
+<div id="registerPanel" hidden>
+  <div class="section-label">Registrar</div>
+  <div class="tabs">
+    <div class="tab active" data-tab="dia">Dia</div>
+    <div class="tab" data-tab="abastecimento">Abastecimento</div>
+  </div>
+
+  <div class="card tabpane active" id="tabDia">
+    <div class="seg-status" id="segStatus">Nenhum trecho aberto hoje.</div>
+
+    <div class="field"><label>Km atual</label><input id="kmInput" type="number" inputmode="numeric" placeholder="ex: 7650"></div>
+    <div class="btn-row">
+      <button class="btn primary" id="btnStart">Iniciar</button>
+      <button class="btn" id="btnPausa">Pausar</button>
+      <button class="btn" id="btnFim">Encerrar</button>
+      <button class="btn ghost" id="btnReset">Zerar sessão</button>
+    </div>
+
+    <div style="height:14px;"></div>
+    <div class="row2">
+      <div class="field"><label>Uber (R$)</label><input id="uberInput" type="number" step="0.01" placeholder="0,00"></div>
+      <div class="field"><label>99 (R$)</label><input id="n99Input" type="number" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div class="field"><label>Gorjeta (R$) — opcional</label><input id="gorjetaInput" type="number" step="0.01" placeholder="0,00"></div>
+    <div class="btn-row">
+      <button class="btn good" id="btnSalvarDia">Salvar dia</button>
+      <button class="btn" id="btnFolga">Marcar folga</button>
+    </div>
+    <div class="msg" id="msgDia"></div>
+  </div>
+
+  <div class="card tabpane" id="tabAbastecimento">
+    <div class="field"><label>Data</label><input id="abDate" type="date"></div>
+    <div class="field"><label>Km no momento</label><input id="abKm" type="number" placeholder="ex: 7650"></div>
+    <div class="row2">
+      <div class="field"><label>Litros</label><input id="abLitros" type="number" step="0.01" placeholder="0,00"></div>
+      <div class="field"><label>Valor pago (R$)</label><input id="abValor" type="number" step="0.01" placeholder="0,00"></div>
+    </div>
+    <div class="btn-row"><button class="btn primary" id="btnAbastecimento">Registrar abastecimento</button></div>
+    <div class="msg" id="msgAbastecimento"></div>
+  </div>
 </div>
 
 <div id="content" hidden>
@@ -157,7 +219,7 @@ footer{margin-top:22px; font-size:0.68rem; color:var(--ink-dim); line-height:1.6
   <footer id="footerNote">—</footer>
 </div>
 
-<div id="emptyState" class="empty" hidden>Nenhum dia registrado ainda. Manda os dados pelo bot do Telegram que eles aparecem aqui.</div>
+<div id="emptyState" class="empty" hidden>Nenhum dia registrado ainda. Usa o formulário "Registrar" acima pra lançar o primeiro dia.</div>
 
 <script>
 (function(){
@@ -177,6 +239,7 @@ if (!cfg || !cfg.url) {
   document.getElementById("setupPanel").hidden = false;
   document.getElementById("statusText").textContent = "Aguardando configuração.";
 } else {
+  document.getElementById("registerPanel").hidden = false;
   loadData(cfg);
 }
 
@@ -187,7 +250,149 @@ document.getElementById("saveConfig").addEventListener("click", function(){
   var newCfg = { url: url, token: token };
   saveConfig(newCfg);
   document.getElementById("setupPanel").hidden = true;
+  document.getElementById("registerPanel").hidden = false;
   loadData(newCfg);
+});
+
+// ---------------------------------------------------------------------------
+// Registrar (substitui o bot do Telegram) — sessão do dia fica no navegador,
+// só manda pra planilha quando "Salvar dia" / "Registrar abastecimento" é clicado.
+// ---------------------------------------------------------------------------
+
+var SESSION_KEY = "painelc3_session";
+function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function loadSession(){ try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null") || {date: todayISO(), segments: [], open: null}; } catch(e){ return {date: todayISO(), segments: [], open: null}; } }
+function saveSession(s){ try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch(e){} }
+function sumField(arr, f){ return arr.reduce(function(a,x){ return a+(Number(x[f])||0); }, 0); }
+
+var session = loadSession();
+
+function renderSession(){
+  var el = document.getElementById("segStatus");
+  var totKm = sumField(session.segments, "km");
+  var totH = sumField(session.segments, "h");
+  var parts = [];
+  if (session.segments.length) parts.push("Fechado até agora: <b>"+totKm.toFixed(0)+" km</b>, <b>"+totH.toFixed(2).replace(".",",")+"h</b>");
+  if (session.open) parts.push("Trecho aberto desde km <b>"+session.open.km+"</b> ("+new Date(session.open.time).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+")");
+  if (!parts.length) parts.push("Nenhum trecho aberto hoje.");
+  el.innerHTML = parts.join(" · ");
+}
+renderSession();
+
+function msg(id, text, ok){
+  var el = document.getElementById(id);
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+}
+
+document.getElementById("btnStart").addEventListener("click", function(){
+  var km = Number(document.getElementById("kmInput").value);
+  if (!km) { msg("msgDia", "Informe o km.", false); return; }
+  if (session.open) { msg("msgDia", "Já tem um trecho aberto desde km "+session.open.km+".", false); return; }
+  session.open = { km: km, time: Date.now() };
+  saveSession(session); renderSession();
+  document.getElementById("kmInput").value = "";
+  msg("msgDia", "Início registrado: km "+km+".", true);
+});
+
+document.getElementById("btnPausa").addEventListener("click", function(){
+  var km = Number(document.getElementById("kmInput").value);
+  if (!session.open) { msg("msgDia", "Não tem trecho aberto pra pausar.", false); return; }
+  if (!km) { msg("msgDia", "Informe o km.", false); return; }
+  var segKm = km - session.open.km;
+  var segH = (Date.now() - session.open.time) / 3600000;
+  session.segments.push({ km: segKm, h: segH });
+  session.open = null;
+  saveSession(session); renderSession();
+  document.getElementById("kmInput").value = "";
+  msg("msgDia", "Pausa registrada: +"+segKm+" km, +"+segH.toFixed(2).replace(".",",")+"h.", true);
+});
+
+document.getElementById("btnFim").addEventListener("click", function(){
+  var km = Number(document.getElementById("kmInput").value);
+  if (!session.open) { msg("msgDia", "Não tem trecho aberto pra encerrar.", false); return; }
+  if (!km) { msg("msgDia", "Informe o km.", false); return; }
+  var segKm = km - session.open.km;
+  var segH = (Date.now() - session.open.time) / 3600000;
+  session.segments.push({ km: segKm, h: segH });
+  session.open = null;
+  saveSession(session); renderSession();
+  document.getElementById("kmInput").value = "";
+  msg("msgDia", "Dia encerrado: "+sumField(session.segments,"km").toFixed(0)+" km, "+sumField(session.segments,"h").toFixed(2).replace(".",",")+"h. Agora põe Uber/99 e salva.", true);
+});
+
+document.getElementById("btnReset").addEventListener("click", function(){
+  session = {date: todayISO(), segments: [], open: null};
+  saveSession(session); renderSession();
+  msg("msgDia", "Sessão zerada.", true);
+});
+
+function postApi(action, payload, cb){
+  var cfg = loadConfig();
+  if (!cfg || !cfg.url) { cb("Configura a URL do Web App primeiro."); return; }
+  var body = Object.assign({ action: action, secret: cfg.token || "" }, payload);
+  fetch(cfg.url, { method: "POST", body: JSON.stringify(body) })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.error) { cb(data.error); return; }
+      cb(null, data);
+    })
+    .catch(function(){ cb("Falha de conexão com a planilha."); });
+}
+
+document.getElementById("btnSalvarDia").addEventListener("click", function(){
+  var km = sumField(session.segments, "km");
+  var horas = sumField(session.segments, "h");
+  var uber = Number(document.getElementById("uberInput").value) || 0;
+  var n99 = Number(document.getElementById("n99Input").value) || 0;
+  var gorjeta = Number(document.getElementById("gorjetaInput").value) || 0;
+  if (km <= 0) { msg("msgDia", "Nenhum trecho fechado ainda — usa Iniciar/Pausar/Encerrar primeiro.", false); return; }
+  postApi("salvarDia", { date: session.date, km: km, horas: horas, uber: uber, n99: n99, gorjeta: gorjeta }, function(err, data){
+    if (err) { msg("msgDia", "Erro: "+err, false); return; }
+    msg("msgDia", "Dia salvo: R$"+data.result.total.toFixed(2).replace(".",",")+" · saldo "+(data.result.saldo>=0?"+":"")+"R$"+data.result.saldo.toFixed(2).replace(".",","), true);
+    session = {date: todayISO(), segments: [], open: null};
+    saveSession(session); renderSession();
+    document.getElementById("uberInput").value = ""; document.getElementById("n99Input").value = ""; document.getElementById("gorjetaInput").value = "";
+    var c = loadConfig(); if (c) loadData(c);
+  });
+});
+
+document.getElementById("btnFolga").addEventListener("click", function(){
+  postApi("folga", { date: session.date }, function(err){
+    if (err) { msg("msgDia", "Erro: "+err, false); return; }
+    msg("msgDia", "Dia marcado como folga.", true);
+    session = {date: todayISO(), segments: [], open: null};
+    saveSession(session); renderSession();
+    var c = loadConfig(); if (c) loadData(c);
+  });
+});
+
+(function(){
+  var dateInput = document.getElementById("abDate");
+  if (dateInput) dateInput.value = todayISO();
+})();
+
+document.getElementById("btnAbastecimento").addEventListener("click", function(){
+  var date = document.getElementById("abDate").value || todayISO();
+  var km = Number(document.getElementById("abKm").value);
+  var litros = Number(document.getElementById("abLitros").value);
+  var valor = Number(document.getElementById("abValor").value);
+  if (!km || !litros || !valor) { msg("msgAbastecimento", "Preenche km, litros e valor.", false); return; }
+  postApi("abastecimento", { date: date, km: km, litros: litros, valor: valor }, function(err, data){
+    if (err) { msg("msgAbastecimento", "Erro: "+err, false); return; }
+    msg("msgAbastecimento", "Abastecimento registrado: R$"+data.preco.toFixed(2).replace(".",",")+"/L.", true);
+    document.getElementById("abKm").value = ""; document.getElementById("abLitros").value = ""; document.getElementById("abValor").value = "";
+    var c = loadConfig(); if (c) loadData(c);
+  });
+});
+
+Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(tab){
+  tab.addEventListener("click", function(){
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){ t.classList.remove("active"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".tabpane"), function(p){ p.classList.remove("active"); });
+    tab.classList.add("active");
+    document.getElementById("tab" + tab.dataset.tab.charAt(0).toUpperCase() + tab.dataset.tab.slice(1)).classList.add("active");
+  });
 });
 
 function setStatus(mode, text){
@@ -326,7 +531,7 @@ function render(data){
   });
 
   document.getElementById("footerNote").innerHTML =
-    "Dados vindos direto da planilha, alimentados pelo bot do Telegram. Combustível calculado com o preço vigente em cada data ÷ autonomia registrada no Parâmetros.";
+    "Dados vindos direto da planilha, lançados aqui pelo site. Combustível calculado com o preço vigente em cada data ÷ autonomia registrada no Parâmetros.";
 }
 
 function renderCosts(params){
